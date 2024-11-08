@@ -43,12 +43,12 @@ def get_internal_links(url, base_domain):
     
     return internal_links
 
-def download_pdf(url):
-    """Download a PDF file from a URL."""
+def download_pdf(url, output_dir):
+    """Download a PDF file from a URL and save it to the specified directory."""
     try:
         response = requests.get(url, stream=True)
         if response.status_code == 200:
-            file_name = url.split("/")[-1]
+            file_name = os.path.join(output_dir, url.split("/")[-1])
             with open(file_name, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
                     f.write(chunk)
@@ -69,18 +69,18 @@ def save_page_to_pdf(url, file_name, driver):
         pdf = driver.execute_cdp_cmd("Page.printToPDF", {"printBackground": True})
         
         # Decode base64 data to binary and write to a PDF file
-        with open(f"{file_name}.pdf", "wb") as f:
+        with open(file_name, "wb") as f:
             f.write(base64.b64decode(pdf['data']))
         
-        debug_message(f"Saved {url} to {file_name}.pdf")
+        debug_message(f"Saved {url} to {file_name}")
         
-        return f"{file_name}.pdf"  # Return the PDF file name
+        return file_name  # Return the PDF file path
     
     except Exception as e:
         debug_message(f"Error saving {url} to PDF: {e}")
         return None
 
-def crawl_and_save(url, base_domain, driver, pdf_only=False, download_pdfs=False, depth=2):
+def crawl_and_save(url, base_domain, driver, output_dir, pdf_only=False, download_pdfs=False, depth=2):
     """Recursively crawl internal links, downloading PDFs if in pdf_only mode or if PDF links are encountered."""
     if depth == 0:
         return []
@@ -94,11 +94,11 @@ def crawl_and_save(url, base_domain, driver, pdf_only=False, download_pdfs=False
     if url.endswith(".pdf"):
         # If the URL is a PDF and we're in download mode or pdf_only mode, download it
         if pdf_only or download_pdfs:
-            download_pdf(url)
-            pdf_files.append(url.split("/")[-1])  # Add downloaded PDF filename to the list
+            download_pdf(url, output_dir)
+            pdf_files.append(os.path.join(output_dir, url.split("/")[-1]))  # Add downloaded PDF filename to the list
     elif not pdf_only:
         # Save the HTML page to a PDF file
-        page_name = url.replace("https://", "").replace("http://", "").replace("/", "_")
+        page_name = os.path.join(output_dir, url.replace("https://", "").replace("http://", "").replace("/", "_") + ".pdf")
         pdf_file = save_page_to_pdf(url, page_name, driver)
         if pdf_file:
             pdf_files.append(pdf_file)
@@ -108,12 +108,12 @@ def crawl_and_save(url, base_domain, driver, pdf_only=False, download_pdfs=False
     for link in internal_links:
         if link not in visited_urls:
             # In pdf_only mode, continue to crawl for more links but only download PDFs
-            pdf_files.extend(crawl_and_save(link, base_domain, driver, pdf_only=pdf_only, download_pdfs=download_pdfs, depth=depth - 1) or [])
+            pdf_files.extend(crawl_and_save(link, base_domain, driver, output_dir, pdf_only=pdf_only, download_pdfs=download_pdfs, depth=depth - 1) or [])
             time.sleep(1)  # Pause briefly to respect server load
 
     return pdf_files
 
-def combine_pdfs(pdf_files, output_filename="combined_document.pdf"):
+def combine_pdfs(pdf_files, output_filename):
     """Combine a list of PDF files into a single PDF."""
     merger = PdfMerger()
     for pdf in pdf_files:
@@ -134,6 +134,11 @@ def main():
     
     target_url = args.url
     base_domain = urlparse(target_url).netloc
+
+    # Create output directory based on the domain name
+    output_dir = base_domain
+    os.makedirs(output_dir, exist_ok=True)
+    
     chrome_driver_path = '/opt/homebrew/bin/chromedriver'  # Replace with your actual ChromeDriver path
 
     # Set up Selenium WebDriver with a Service object
@@ -143,11 +148,12 @@ def main():
     driver = webdriver.Chrome(service=service, options=options)
     
     # Crawl and save pages
-    pdf_files = crawl_and_save(target_url, base_domain, driver, pdf_only=args.pdf_only, download_pdfs=args.download_pdfs, depth=args.depth)
+    pdf_files = crawl_and_save(target_url, base_domain, driver, output_dir, pdf_only=args.pdf_only, download_pdfs=args.download_pdfs, depth=args.depth)
     
     # Combine PDFs if requested
     if args.single_pdf and not args.pdf_only:
-        combine_pdfs(pdf_files)
+        combined_output = os.path.join(output_dir, "combined_document.pdf")
+        combine_pdfs(pdf_files, combined_output)
     else:
         debug_message("Saved each page or downloaded PDF as a separate file.")
 
