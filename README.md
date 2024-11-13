@@ -64,7 +64,7 @@ Copy code
     
     Copy code
     
-    `python3 crawl_and_save.py https://docs.fastly.com/en/ngwaf/using-ngwaf` 
+    `python3 crawl_and_save.py https://docs.example.com` 
     
 2.  **Combine all pages into a single PDF**:
     
@@ -72,7 +72,7 @@ Copy code
     
     Copy code
     
-    `python3 crawl_and_save.py https://docs.fastly.com/en/ngwaf/using-ngwaf --single-pdf` 
+    `python3 crawl_and_save.py https://docs.example.com --single-pdf` 
     
 3.  **Download PDFs linked on pages in addition to saving HTML pages as PDFs**:
     
@@ -80,7 +80,7 @@ Copy code
     
     Copy code
     
-    `python3 crawl_and_save.py https://docs.fastly.com/en/ngwaf/using-ngwaf --download-pdfs` 
+    `python3 crawl_and_save.py https://docs.example.com --download-pdfs` 
     
 4.  **PDF-Only Mode**: Crawl the site and download only PDFs linked on pages, ignoring HTML pages:
     
@@ -88,7 +88,7 @@ Copy code
     
     Copy code
     
-    `python3 crawl_and_save.py https://www.humansecurity.com/learn/resources --pdf-only` 
+    `python3 crawl_and_save.py https://docs.example.com --pdf-only` 
     
 5.  **Custom Crawling Depth**:
     
@@ -96,7 +96,7 @@ Copy code
     
     Copy code
     
-    `python3 crawl_and_save.py https://docs.fastly.com/en/ngwaf/using-ngwaf --depth 3` 
+    `python3 crawl_and_save.py https://docs.example.com --depth 3` 
     
 
 ## How It Works
